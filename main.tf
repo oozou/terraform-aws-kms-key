@@ -103,7 +103,6 @@ data "aws_iam_policy_document" "direct_cryptography" {
 }
 
 data "aws_iam_policy_document" "kms_key_policy" {
-  source_policy_documents = local.service_key_count == 1 ? [data.aws_iam_policy_document.admin_policy.json, data.aws_iam_policy_document.service_cryptography[0].json] : [data.aws_iam_policy_document.admin_policy.json, data.aws_iam_policy_document.direct_cryptography[0].json]
-  # override_policy_documents = var.additional_policies
-  override_policy_documents = [data.aws_iam_policy_document.cloudtrail.json, data.aws_iam_policy_document.flow_logs.json]
+  source_policy_documents   = local.service_key_count == 1 ? [data.aws_iam_policy_document.admin_policy.json, data.aws_iam_policy_document.service_cryptography[0].json] : [data.aws_iam_policy_document.admin_policy.json, data.aws_iam_policy_document.direct_cryptography[0].json]
+  override_policy_documents = var.additional_policies
 }
