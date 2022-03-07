@@ -4,8 +4,8 @@ AWS Key Management Service (KMS) makes it easy for you to create and manage cryp
 
 It creates:
 
-- *KMS key*: Resource which creates KMS key
-- *KMS key policy*: Key policies which permits cross account access, access through AWS principles and AWS services based on some conditions and input variables
+- _KMS key_: Resource which creates KMS key
+- _KMS key policy_: Key policies which permits cross account access, access through AWS principles and AWS services based on some conditions and input variables
 
 ## Architecture
 
@@ -14,7 +14,7 @@ It creates:
 ## Run-Book
 
 ### Pre-requisites
-  
+
 #### IMPORTANT NOTE
 
 1. Required version of Terraform is mentioned in `meta.tf`.
@@ -34,14 +34,77 @@ IMPORTANT: We periodically release versions for the components. Since, master br
 
 ```terraform
 module "logs_kms" {
-  source      = "git::https://<YOUR_VCS_URL>/components/terraform-aws-kms-key?ref=v4.1.0"
+  source      = "git::https://<YOUR_VCS_URL>/components/terraform-aws-kms-key?ref=<ref_name>"
   key_type    = "service"
   description = "Used to encrypt log aggregation resources"
-  alias_name  = local.kms_alias_name
+  prefix      = "<customer_name>"
+  name        = "<paas_name>"
+  environment = "devops"
 
   service_key_info = "${map(
     "aws_service_names", list(format("s3.%s.amazonaws.com", data.aws_region.current.name)),
     "caller_account_ids", list(data.aws_caller_identity.current.account_id)
   )}"
+
+  additional_policies = [data.aws_iam_policy_document.cloudtrail.json, data.aws_iam_policy_document.flow_logs.json]
 }
 ```
+
+<!-- BEGIN_TF_DOCS -->
+
+## Requirements
+
+| Name                                                                     | Version  |
+| ------------------------------------------------------------------------ | -------- |
+| <a name="requirement_terraform"></a> [terraform](#requirement_terraform) | >= 1.0.0 |
+| <a name="requirement_aws"></a> [aws](#requirement_aws)                   | >= 4.0.0 |
+| <a name="requirement_random"></a> [random](#requirement_random)          | >= 2.3.0 |
+
+## Providers
+
+| Name                                                      | Version |
+| --------------------------------------------------------- | ------- |
+| <a name="provider_aws"></a> [aws](#provider_aws)          | 4.3.0   |
+| <a name="provider_random"></a> [random](#provider_random) | 3.1.0   |
+
+## Modules
+
+No modules.
+
+## Resources
+
+| Name                                                                                                                                               | Type        |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| [aws_kms_alias.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kms_alias)                                        | resource    |
+| [aws_kms_key.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kms_key)                                            | resource    |
+| [random_string.random_suffix](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/string)                               | resource    |
+| [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity)                      | data source |
+| [aws_iam_policy_document.admin_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document)         | data source |
+| [aws_iam_policy_document.direct_cryptography](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document)  | data source |
+| [aws_iam_policy_document.kms_key_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document)       | data source |
+| [aws_iam_policy_document.service_cryptography](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+
+## Inputs
+
+| Name                                                                                          | Description                                                                                                                                                          | Type                                                                                                                                                                                                                                                      | Default                                                                     | Required |
+| --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | :------: |
+| <a name="input_additional_policies"></a> [additional_policies](#input_additional_policies)    | Additional IAM policies block, input as data source. Ref: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document         | `list(string)`                                                                                                                                                                                                                                            | `[]`                                                                        |    no    |
+| <a name="input_append_random_suffix"></a> [append_random_suffix](#input_append_random_suffix) | Append a random string to the alias name. Default: true (yes)                                                                                                        | `bool`                                                                                                                                                                                                                                                    | `true`                                                                      |    no    |
+| <a name="input_custom_tags"></a> [custom_tags](#input_custom_tags)                            | Tags to add more; default tags contian {terraform=true, environment=var.environment}                                                                                 | `map(string)`                                                                                                                                                                                                                                             | `{}`                                                                        |    no    |
+| <a name="input_deletion_window"></a> [deletion_window](#input_deletion_window)                | Number of days before a key actually gets deleted once it's been scheduled for deletion. Valid value between 7 and 30 days                                           | `number`                                                                                                                                                                                                                                                  | `30`                                                                        |    no    |
+| <a name="input_description"></a> [description](#input_description)                            | The description to give to the key                                                                                                                                   | `string`                                                                                                                                                                                                                                                  | n/a                                                                         |   yes    |
+| <a name="input_direct_key_info"></a> [direct_key_info](#input_direct_key_info)                | Information required for a 'direct' key                                                                                                                              | <pre>object({<br> # List of principals to allow for cryptographic use of key.<br> allow_access_from_principals = list(string)<br> })</pre>                                                                                                                | <pre>{<br> "allow_access_from_principals": []<br>}</pre>                    |    no    |
+| <a name="input_environment"></a> [environment](#input_environment)                            | Environment name used as environment resources name.                                                                                                                 | `string`                                                                                                                                                                                                                                                  | n/a                                                                         |   yes    |
+| <a name="input_key_type"></a> [key_type](#input_key_type)                                     | Indicate which kind of key to create: 'service' for key used by services; 'direct' for other keys. Must provide service_key or direct_key maps depending on the type | `string`                                                                                                                                                                                                                                                  | n/a                                                                         |   yes    |
+| <a name="input_name"></a> [name](#input_name)                                                 | Name used as a resources name.                                                                                                                                       | `string`                                                                                                                                                                                                                                                  | n/a                                                                         |   yes    |
+| <a name="input_prefix"></a> [prefix](#input_prefix)                                           | The prefix name of customer to be displayed in AWS console and resource.                                                                                             | `string`                                                                                                                                                                                                                                                  | n/a                                                                         |   yes    |
+| <a name="input_service_key_info"></a> [service_key_info](#input_service_key_info)             | Information required for a 'service' key                                                                                                                             | <pre>object({<br> # List of AWS service names for the kms:ViaService policy condition<br> aws_service_names = list(string)<br> # List of caller account IDs for the kms:CallerAccount policy condition<br> caller_account_ids = list(string)<br> })</pre> | <pre>{<br> "aws_service_names": [],<br> "caller_account_ids": []<br>}</pre> |    no    |
+
+## Outputs
+
+| Name                                                     | Description |
+| -------------------------------------------------------- | ----------- |
+| <a name="output_key_arn"></a> [key_arn](#output_key_arn) | KMS key arn |
+| <a name="output_key_id"></a> [key_id](#output_key_id)    | KMS key id  |
+
+<!-- END_TF_DOCS -->

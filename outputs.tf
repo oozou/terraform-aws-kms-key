@@ -1,7 +1,9 @@
 output "key_arn" {
-  value = var.key_type == "service" ? join("", aws_kms_key.service_key.*.arn) : join("", aws_kms_key.direct_key.*.arn)
+  description = "KMS key arn"
+  value       = join("", aws_kms_key.this.*.arn)
 }
 
 output "key_id" {
-  value = var.key_type == "service" ? join("", aws_kms_key.service_key.*.key_id) : join("", aws_kms_key.direct_key.*.key_id)
+  description = "KMS key id"
+  value       = join("", aws_kms_key.this.*.key_id)
 }
