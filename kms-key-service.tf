@@ -19,9 +19,9 @@ resource "aws_kms_alias" "service_key" {
   count         = local.service_key_count
 }
 
-data "aws_iam_policy_document" "kms_key_policy_via_service" {
+data "aws_iam_policy_document" "admin_policy" {
   statement {
-    sid       = "Allow Admin" # Root user will have permissions to manage the CMK, but do not have permissions to use the CMK in cryptographic operations. - https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#cryptographic-operations
+    sid = "Allow Admin" # Root user will have permissions to manage the CMK, but do not have permissions to use the CMK in cryptographic operations. - https://docs.aws.amazon.com/kms/latest/developerguide/concepts.html#cryptographic-operations
     actions = [
       "kms:Create*",
       "kms:Describe*",
@@ -45,38 +45,77 @@ data "aws_iam_policy_document" "kms_key_policy_via_service" {
       identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
     }
   }
+}
+data "aws_iam_policy_document" "kms_key_policy_via_service" {
+  # dynamic "statement" {
+  #   for_each = var.additional_statements
+  #   content {
+  #     sid = statement.value.sid
 
-  statement {
-    sid = "Allow Cryptography"
+  #     actions = [
+  #       "kms:Encrypt",
+  #       "kms:Decrypt",
+  #       "kms:ReEncrypt*",
+  #       "kms:GenerateDataKey*",
+  #       "kms:CreateGrant",
+  #       "kms:DescribeKey",
+  #     ]
 
-    actions = [
-      "kms:Encrypt",
-      "kms:Decrypt",
-      "kms:ReEncrypt*",
-      "kms:GenerateDataKey*",
-      "kms:CreateGrant",
-      "kms:DescribeKey",
-    ]
+  #     resources = ["*"]
 
-    resources = ["*"]
+  #     dynamic "principals" {
+  #       for_each = lookup(statement.value, "principals", [])
+  #       content {
+  #         type        = lookup(principals.value, "type", "AWS")
+  #         identifiers = lookup(principals.value, "identifiers", ["*"])
+  #       }
+  #     }
 
-    principals {
-      type        = "AWS"
-      identifiers = ["*"]
-    }
+  #     dynamic "condition" {
+  #       for_each = lookup(statement.value, "condition", [])
+  #       content {
+  #         test     = lookup(condition.value, "test", null)
+  #         variable = lookup(condition.value, "variable", null)
+  #         values   = lookup(condition.value, "values", [])
+  #       }
+  #     }
 
-    condition {
-      test     = "StringEquals"
-      variable = "kms:ViaService"
-      values   = var.service_key_info.aws_service_names
-    }
 
-    condition {
-      test     = "StringEquals"
-      variable = "kms:CallerAccount"
-      values   = var.service_key_info.caller_account_ids
-    }
-  }
+  #   }
+  # }
 
-  count = local.service_key_count
+  # statement {
+  #   sid = "Allow Cryptography"
+
+  #   actions = [
+  #     "kms:Encrypt",
+  #     "kms:Decrypt",
+  #     "kms:ReEncrypt*",
+  #     "kms:GenerateDataKey*",
+  #     "kms:CreateGrant",
+  #     "kms:DescribeKey",
+  #   ]
+
+  #   resources = ["*"]
+
+  #   principals {
+  #     type        = "AWS"
+  #     identifiers = ["*"]
+  #   }
+
+  #   condition {
+  #     test     = "StringEquals"
+  #     variable = "kms:ViaService"
+  #     values   = var.service_key_info.aws_service_names
+  #   }
+
+  #   condition {
+  #     test     = "StringEquals"
+  #     variable = "kms:CallerAccount"
+  #     values   = var.service_key_info.caller_account_ids
+  #   }
+  # }
+  source_policy_documents   = [data.aws_iam_policy_document.admin_policy.json]
+  override_policy_documents = var.additional_policies
+  count                     = local.service_key_count
 }

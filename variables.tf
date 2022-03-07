@@ -39,6 +39,10 @@ variable "service_key_info" {
   }
 }
 
+variable "additional_policies" {
+  type = list(string)
+}
+
 variable "direct_key_info" {
   description = "Information required for a 'direct' key"
   type = object({
@@ -52,6 +56,6 @@ variable "direct_key_info" {
 
 variable "custom_tags" {
   description = "Custom tags which can be passed on to the AWS resources. They should be key value pairs having distinct keys"
-  type        = map
+  type        = map(any)
   default     = {}
 }
