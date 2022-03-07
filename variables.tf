@@ -21,7 +21,7 @@ variable "description" {
   type        = string
 }
 
-variable "custom_tags" {
+variable "tags" {
   description = "Tags to add more; default tags contian {terraform=true, environment=var.environment}"
   type        = map(string)
   default     = {}

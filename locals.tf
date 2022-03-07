@@ -11,6 +11,6 @@ locals {
       Terraform   = true
       Environment = var.environment
     },
-    var.custom_tags
+    var.tags
   )
 }
