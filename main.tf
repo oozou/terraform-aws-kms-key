@@ -5,10 +5,13 @@ resource "aws_kms_key" "this" {
 
   policy = data.aws_iam_policy_document.kms_key_policy.json
 
-  tags = merge({
-    Name  = local.alias_name
-    Alias = local.alias_name
-  }, local.tags)
+  tags = merge(
+    {
+      Name  = local.alias_name
+      Alias = local.alias_name
+    },
+    local.tags
+  )
 }
 
 resource "aws_kms_alias" "this" {
