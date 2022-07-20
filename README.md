@@ -41,10 +41,10 @@ module "logs_kms" {
   name        = "<paas_name>"
   environment = "devops"
 
-  service_key_info = "${map(
-    "aws_service_names", list(format("s3.%s.amazonaws.com", data.aws_region.current.name)),
-    "caller_account_ids", list(data.aws_caller_identity.current.account_id)
-  )}"
+  service_key_info = {
+    aws_service_names  = tolist([format("s3.%s.amazonaws.com", data.aws_region.current.name)])
+    caller_account_ids = tolist([data.aws_caller_identity.current.account_id])
+  }
 
   additional_policies = [data.aws_iam_policy_document.cloudtrail.json, data.aws_iam_policy_document.flow_logs.json]
 }
