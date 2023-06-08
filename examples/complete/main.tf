@@ -1,52 +1,48 @@
-provider "aws" {
-  region = "us-east-2"
+locals {
+  tags = {
+    Terraform   = true
+    Environment = "devops"
+  }
 }
 
-data "aws_caller_identity" "current" {
+data "aws_caller_identity" "this" {}
+data "aws_region" "this" {}
+
+data "aws_iam_policy_document" "terraform_access_kms" {
+  statement {
+    sid    = "AllowTerraformToAccesKMSforObjectLevelActionsPurpose"
+    effect = "Allow"
+    actions = [
+      "kms:Encrypt",
+      "kms:Decrypt",
+      "kms:GenerateDataKey*",
+    ]
+    resources = ["*"]
+    principals {
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.this.account_id}:user/terraform"]
+      type        = "AWS"
+    }
+  }
 }
 
-data "aws_region" "current" {
-}
+module "application_bucket_kms" {
+  source = "../../"
 
-
-module "kms_service" {
-  source = "../.."
-
-  prefix      = "oozou"
-  environment = "dev"
-  name        = "s3_key"
-
-  key_type    = "service"
-  description = "Used to encrypt log aggregation resources"
+  prefix               = "oozou"
+  environment          = "devops"
+  name                 = "application-s3"
   append_random_suffix = true
-  deletion_window = 7
+  description          = "S3 bucket encryption KMS key"
+  key_type             = "service"
 
   service_key_info = {
-    aws_service_names  = tolist([format("s3.%s.amazonaws.com", data.aws_region.current.name)])
-    caller_account_ids = tolist([data.aws_caller_identity.current.account_id])
+    caller_account_ids = [data.aws_caller_identity.this.account_id]
+    aws_service_names  = ["s3.${data.aws_region.this.name}.amazonaws.com"]
   }
 
+  additional_policies = [
+    data.aws_iam_policy_document.terraform_access_kms.json
+  ]
 
-  tags = { "Workspace" = "000-test" }
-}
-
-module "kms_direct" {
-  source = "../.."
-
-  prefix      = "oozou"
-  environment = "dev"
-  name        = "app_key"
-
-
-  key_type    = "direct"
-  description = "Used to encrypt application"
-  append_random_suffix = true
-  deletion_window = 7
-
-  direct_key_info = {
-    allow_access_from_principals = tolist(["arn:aws:iam::xxxxx:role/sample-role"])
-    }
-
-
-  tags = { "Workspace" = "000-test" }
+  tags = local.tags
 }
